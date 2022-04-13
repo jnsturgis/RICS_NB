@@ -4,7 +4,7 @@
 *	This file implements tha RICS_fit class.
 *
 *	@author James N Sturgis
-*	@date 2009-2015
+*	@date 2009-2022
 */
 
 import ij.*;
@@ -24,18 +24,19 @@ import java.util.regex.*;
 *	This class takes as input an image created by the RICS_calculator class that
 *	contains an image auto-correlation map. This map, when calculated on an image
 *	obtained for RICS analysis using fluctuation correlations represents the point
-*	spread function (PSF) of the microscope as distorted by movement of objects during
-*	image acquisition. The aim of this program is to deconvolute this image into
-*	two parts the PSF and the fluorescence correlation spectrum (FCS) associated with
-*	the movement induced distortion.
+*	spread function (PSF) of the microscope as distorted by movement of objects
+*	during image acquisition. The aim of this program is to deconvolute this image
+*	into two parts the PSF and the fluorescence correlation spectrum (FCS)
+*	associated with the movement induced distortion.
 *
 *	This is described by the equation:
 *	\f{equation}
 *		Autocorrelation(x,y) = PSF(x,y) x FCS( delay(x,y) )
 *	\f}
-*	Where the \f$ delay() \f$ function describes the time lag between the different
-*	positions in the autocorrelation function and the central point. This in turn
-*	depends on the scanning parameters.
+*
+*	Where the \f$ delay() \f$ function describes the time lag between the
+*	different positions in the autocorrelation function and the central point.
+*	This in turn depends on the scanning parameters.
 *
 *	This deconvolution can be used in two ways, first to estimate the PSF by
 *	providing information on the movement of the fluorophores during the
@@ -48,7 +49,7 @@ import java.util.regex.*;
 *	the PSF model or the FCS model as appropriate. The basic PSF model is a symmetric
 *	two dimensionnal gaussian:
 *	\f{equation}
-		PSF(x,y) = exp^{-\frac{(x-x_0)^2 
+		PSF(x,y) = exp^{-\frac{(x-x_0)^2
 					+ (y-y_0)^2 *Dx*Dx}{(1+\frac{\tau}{\tau_d})(Wxy*Wxy)}}
 	\f}
 *	Where \f$ x_0 \f$ is the x origin, \f$ y_0 \f$ is the y origin, Dx is the
@@ -122,41 +123,41 @@ public class RICS_fit implements PlugInFilter {
 */
 
 	/*************************************
-	**									**
-	**		Initialization section.		**
-	**									**
+	**									                **
+	**		Initialization section.		    **
+	**									                **
 	*************************************/
 
 	int		size = (int) ip.getWidth();			// ACF size
-    int		di = (size - 1)/2;		            // Position of midpoint.
-    int     i, j;                               // Counters
+    int		di = (size - 1)/2;		        // Position of midpoint.
+    int     i, j;                       // Counters
 
-	float [] parameters = new float[10];		// Array to hold parameters
-	parameters[0] = (float) 1.0;				// Concentration
-	parameters[1] = (float) 1.0;				// Molecular brightness
-	parameters[2] = (float) 0.0;				// Diffusion coefficient
-	parameters[3] = (float) 0.4;				// Beam waist
-	parameters[4] = (float) 1.2;				// Beam height
+	float [] parameters = new float[10];  // Array to hold parameters
+	parameters[0] = (float) 1.0;			  	// Concentration
+	parameters[1] = (float) 1.0;				  // Molecular brightness
+	parameters[2] = (float) 0.0;				  // Diffusion coefficient
+	parameters[3] = (float) 0.4;				  // Beam waist
+	parameters[4] = (float) 1.2;				  // Beam height
 	parameters[5] = (float) 0.044;				// Pixel size
-	parameters[6] = (float) 8.0;				// Pixel time
-	parameters[7] = (float) 4.0;				// Line time
-	parameters[8] = (float) 0.0;				// Flags
-	parameters[9] = (float) size;	            // Size of ACF
+	parameters[6] = (float) 8.0;				  // Pixel time
+	parameters[7] = (float) 4.0;				  // Line time
+	parameters[8] = (float) 0.0;				  // Flags
+	parameters[9] = (float) size;	        // Size of ACF
 
-    GenericDialog	gd = new GenericDialog("RICS fitting");
-    FIT_dialog( gd, parameters );				// Handle dialog and decide what to do.
-    if( gd.wasCanceled() ) return;
+  GenericDialog	gd = new GenericDialog("RICS fitting");
+  FIT_dialog( gd, parameters );				  // Handle dialog and decide what to do.
+  if( gd.wasCanceled() ) return;
 
-    float [][] psf   = new float[size][size];   // Array for calculated psf data
-    float [][] delay = new float[size][size];   // Array for pixel delays
-    float [][] fcs   = new float[size][size];   // Array for calculated fcs data
+  float [][] psf   = new float[size][size];   // Array for calculated psf data
+  float [][] delay = new float[size][size];   // Array for pixel delays
+  float [][] fcs   = new float[size][size];   // Array for calculated fcs data
 	float [][] acf   = new float[size][size];   // Array for input acf
 	float [][] resid = new float[size][size];   // Array for calculated residuals
 
-    for( i = 0; i < size; i++ )					// Extract the ACF from the image
-        for( j = 0; j < size; j++ ){
-            acf[i][j]  = ip.getPixelValue(i,j);
-        }
+  for( i = 0; i < size; i++ )				    // Extract the ACF from the image
+    for( j = 0; j < size; j++ ){
+      acf[i][j]  = ip.getPixelValue(i,j);
+    }
 
 	int	flags = (int) parameters[8];
 	double adjust[] = new double[4];
@@ -170,14 +171,14 @@ public class RICS_fit implements PlugInFilter {
 	delay_fill( delay, parameters );
 	fcs_fill( fcs, size, delay, adjust );
 	psf_fill( psf, size, delay, adjust );
-	
+
 	fcs[di][di] = (float)0.0;					// Ignore central point contains all
 	psf[di][di] = (float)0.0;					// Uncorrelated stuff.
 	acf[di][di] = (float)0.0;
 
 	float sum_A  = (float)0.0;					// Estimate scale_factor so sum of
 	float sum_FP = (float)0.0;					// residuals is 0.0
-	
+
     for( i = 0; i < size; i++ )
         for( j = 0; j < size; j++ ){
         	sum_A  += acf[i][j];
@@ -187,7 +188,7 @@ public class RICS_fit implements PlugInFilter {
 	float scale_factor = sum_A/sum_FP;
 
 	adjust[3] *= scale_factor;					// g(0)
-	
+
 	IJ.log("Flags ="+flags );
 
 	/*************************************
@@ -212,13 +213,13 @@ public class RICS_fit implements PlugInFilter {
 	parameters[3] = (float)(adjust[1] * parameters[5]);
 	parameters[4] = (float)(adjust[2] * parameters[3]);
 	scale_factor = (float)adjust[3];
-	
+
 	fcs_fill( fcs, size, delay, adjust );
 	psf_fill( psf, size, delay, adjust );
 	fcs[di][di] = (float)0.0;					// Ignore central point contains all
 	psf[di][di] = (float)0.0;					// Uncorrelated stuff.
-	
-	float	sum = (float)0.0;	
+
+	float	sum = (float)0.0;
 	for( i = 0; i < size; i++ )					// Put g(0) into fcs part,
 	  for( j = 0; j < size; j++ ){				// and calculate residuals.
         resid[i][j] = acf[i][j] - psf[i][j] * fcs[i][j];
@@ -231,12 +232,12 @@ public class RICS_fit implements PlugInFilter {
 	**									**
 	*************************************/
 
-    IJ.log("Residual is          \t="+sum );
-    IJ.log("Diffusion coefficient\t="+parameters[2]+"um²/sec" );
+  IJ.log("Residual is          \t="+sum );
+  IJ.log("Diffusion coefficient\t="+parameters[2]+"um²/sec" );
 	IJ.log("Beam height          \t="+parameters[4]+"um" );
 	IJ.log("Beam waist           \t="+parameters[3]+"um" );
 	IJ.log("G(0)                 \t="+scale_factor );
-	
+
 	/*************************************
 	**									**
 	**	Display of residuals and the	**
@@ -248,17 +249,17 @@ public class RICS_fit implements PlugInFilter {
     image = new ImagePlus("Residuals", myprocessor );
     image.show();
     image.updateAndDraw();
-    
+
     ImageProcessor myprocessor2 = new FloatProcessor( fcs );
     image = new ImagePlus("FCS part", myprocessor2 );
     image.show();
     image.updateAndDraw();
-    
+
     ImageProcessor myprocessor3 = new FloatProcessor( psf );
     image = new ImagePlus("PSF part", myprocessor3 );
     image.show();
     image.updateAndDraw();
-    
+
   }
 
   private void	FIT_dialog(GenericDialog gd, float [] parameters )
@@ -447,7 +448,7 @@ public class RICS_fit implements PlugInFilter {
   	double	the_param[]   = new double[4];
   	float   fit_psf[][]   = new float[size][size];
   	float	fit_fcs[][]	  = new float[size][size];
-  	
+
   	int		i,j,k,l;					// General counters
 	int		di = (size - 1)/2;
 	String	str = "";
@@ -463,7 +464,7 @@ public class RICS_fit implements PlugInFilter {
 	for(j = 0; j < 3; j++ )
 	  for( i = 0; i < 4; i++ )
 		fit_param[j][i+1] = adjust[i];
-	
+
 	fit_param[2][which + 1] *= 2.0;
 	fit_param[0][which + 1] *= 0.5;
 
@@ -474,20 +475,20 @@ public class RICS_fit implements PlugInFilter {
 	double error = 0.0;
 	double eps_fit;
 	double temp;
-	
+
 	for( i = 0; i < size; i++ )
 	  for(j = 0; j < size; j++ )
 	  	sum_y += ydata[i][j];
 										// Calculate scale_factors
 	for( j = 0; j <= 3; j++ ){			// Calculate sum of square errors
 	  for( i = 0; i < 4; i++ ) the_param[i] = fit_param[j][i+1];
-	  
+
 	  psf_fill( fit_psf, size, delays, the_param );
 	  fcs_fill( fit_fcs, size, delays, the_param );
 	  sum_pf = 0.0;
 	  for( i = 0; i < size; i++ )
 		for(k = 0; k < size; k++ ) sum_pf += fit_psf[i][k]*fit_fcs[i][k];
-		
+
 	  scale_factor = sum_y / sum_pf;
 	  fit_param[j][4] *= scale_factor;
 	  sum_ee = 0.0;
@@ -520,14 +521,14 @@ public class RICS_fit implements PlugInFilter {
 	  	fit_param[1][i] = fit_param[3][i];
 	  }
 	}
-	
+
 	for( i = 0; i < 3; i++ ){
 	  str = "SSE ="+fit_param[i][0]+", with";
-	  for( j = 0; j < 4; j++ ) 
+	  for( j = 0; j < 4; j++ )
 	  	str = str+" "+fit_param[i][j+1];
 	  IJ.log( str );
 	}
-	
+
 	eps_fit = Math.abs((fit_param[2][which + 1] - fit_param[0][which + 1])/fit_param[1][which + 1]);
 	IJ.log("Size is "+eps_fit );
 
@@ -539,9 +540,9 @@ public class RICS_fit implements PlugInFilter {
   	int	step = 0;
   	int	max_step = 100;
 	double eps = 1E-6;
-	
+
 	double	a, b;
-	
+
   	while((step < max_step) & (eps_fit > eps)){
   	  step++;
 										// Quadratic fit to three points and find minimum.
@@ -579,7 +580,7 @@ public class RICS_fit implements PlugInFilter {
 		for( i = 0; i < 5; i++ ){
 		  temp = fit_param[j][i];
 		  fit_param[j][i] = fit_param[j+1][i];
-		  fit_param[j+1][i] = temp;	 
+		  fit_param[j+1][i] = temp;
 		}
 
 	  eps_fit = Math.abs((fit_param[2][which + 1] - fit_param[0][which + 1])/fit_param[1][which + 1]);
@@ -598,11 +599,10 @@ public class RICS_fit implements PlugInFilter {
 	IJ.log("Optimisation stopped after "+step+" moves." );
 	for( i = 0; i < 4; i++ ){
 	  str = "SSE ="+fit_param[i][0]+", with";
-	  for( j = 0; j < 4; j++ ) 
+	  for( j = 0; j < 4; j++ )
 	  	str = str+" "+fit_param[i][j+1];
 	  IJ.log( str );
 	}
-  	return (step >= max_step); 
+  	return (step >= max_step);
   }
 }
-
